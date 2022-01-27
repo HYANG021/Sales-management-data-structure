@@ -1,0 +1,364 @@
+'''
+AN6007 Advanced Programming - Group Submission
+Group 7
+Members: XiaoYi, HaoYue, Peiyu, Daniel, YangHang
+'''
+import os
+
+def menu():
+    agentpath = input("Please provide path of Agentlist.txt on local drive ")
+    if agentpath == '':
+        agentpath = r"C:\Users\danlo\OneDrive - Nanyang Technological University\NTU MSBA\AN6007 - Advanced Programming\Group 1\Group Submission\AgentList.txt"
+    a=AgentList(agentpath)
+    salespath = input("Please provide path of Salesdata folder on local drive ")
+    if salespath == '':
+        salespath = r"C:\Users\danlo\OneDrive - Nanyang Technological University\NTU MSBA\AN6007 - Advanced Programming\Group 1\Group Submission\Salesdata"
+    saleslist = os.listdir(salespath)
+    for file in saleslist:
+        if file.endswith('.txt'):
+            month = int(file[11:13])
+            a.import_value_from_file(salespath + "\\" + file, month)    
+    while True:
+        option = input("""
+Main Menu
+    1) Print series of agents
+    2) Print agent profile
+    3) Print entire upline
+    4) Print performance of specific agent
+    5) Print all agents who have consecutive increase in the purchase for 4 months
+    6) Print all agents who have consecutive increase in the purchase + group sales for 4 months
+    7) Print 3 generation of performance tracing
+    Q) Quit
+Please select which function you would like to perfom? """).strip().upper()
+        if option == '1':
+            start = input("Please input starting agent ").strip()
+            end = input("Please input ending agent ").strip()
+            a.print_serial(int(start), int(end)) # 10015,10027
+        elif option =='2':
+            profile = input("Please input agent you wish to query profile of ").strip()
+            a.agent(int(profile)) #10012
+        elif option =='3':
+            uplines = input("Please input agent you wish to query upline of ").strip()
+            a.print_uplines(int(uplines)) #14987
+        elif option =='4':
+            performance = input("Please input agent you wish to query performance of ").strip()
+            a.print_performance(int(performance)) #37609
+        elif option =='5':
+            print("4 mths up individual sales")
+            for each in a.list_upIndSales():
+                print(each)
+                print(each.mthPurchase)
+        elif option =='6':
+            print("4 mths up group sales")
+            for each in a.list_upGrpSales():
+                print("*", end="")
+                a.print_performance(each)
+            print()
+        elif option =='7':
+            tperf = input("Please input agent you wish to query 3 generation tracking performance of ").strip()
+            tmth = input("Please input month you wish to query 3 generation tracking performance of ").strip()
+            a.tree_performance_mth(int(tperf),int(tmth)) #10786, 1
+        elif option =='Q':
+            print('Thank you, Good bye!')
+            break
+        else:
+            print("This is not a valid option")
+
+class Agent:
+    def __init__(self,ID):
+        '''
+        init a new agent node
+        :param ID: int
+        '''
+        self.ID = ID
+        self.left = None
+        self.right = None
+        self.upline = None
+        self.downline = []
+        self.mthPurchase = [0]*12
+        self.mthSales = [0]*12
+        self.h = 1
+
+    def __str__(self):
+        '''
+        :return: str, ID and ID of upline of the agent
+        '''
+        return f'{self.ID}-{self.upline.ID}'
+
+class AgentList:
+    def __init__(self,file_name):
+        '''
+        create a new data tree of agent nodes
+        :param file_name: str, the directory of AgentList file
+        '''
+        with open(file_name, "r") as f:
+            self.agent_list = f.read().split("\n")
+            self.agent_list.remove("")
+        self.root = None
+        self.import_line_from_file()
+
+    def import_line_from_file(self):
+        '''
+        init agent nodes, their upline and downline relationship
+        '''
+        self.root = Agent(int(self.agent_list[0].split('-')[0]))
+        self.root.upline = Agent(int(self.agent_list[0].split('-')[1]))
+        for line in self.agent_list[1:]:
+            ID = int(line.split('-')[0])
+            ID_upline = int(line.split('-')[1])
+            self.root = self.insert(self.root, ID)
+            self.find_agent(ID).upline = self.find_agent(ID_upline)
+            self.find_agent(ID_upline).downline.append(ID)
+
+    def insert(self, root, ID):
+        '''
+        insert new agent node into tree, and check whether
+        AVL tree need rebalancing after inserting new node
+        :param root: Agent, root of the tree
+        :param ID: int
+        :return: Agent
+        '''
+        if not root:
+            root = Agent(ID)
+            return root
+        elif ID < root.ID:
+            root.left = self.insert(root.left, ID)
+        else:
+            root.right = self.insert(root.right, ID)
+
+        root.h = 1 + max(self.getHeight(root.left),
+                         self.getHeight(root.right))
+
+        b = self.getBal(root)
+
+        if b > 1 and ID < root.left.ID:
+            return self.rRotate(root)
+
+        if b < -1 and ID > root.right.ID:
+            return self.lRotate(root)
+
+        if b > 1 and ID > root.left.ID:
+            root.l = self.lRotate(root.left)
+            return self.rRotate(root)
+
+        if b < -1 and ID < root.right.ID:
+            root.r = self.rRotate(root.right)
+            return self.lRotate(root)
+
+        return root
+
+    def lRotate(self, z):
+        '''
+        left rotate unbalanced tree
+        :param z: root of current child which needs left rotation
+        :return: Agent, root of current child after rotation
+        '''
+        y = z.right
+        T2 = y.left
+
+        y.left = z
+        z.right = T2
+
+        z.h = 1 + max(self.getHeight(z.left),
+                      self.getHeight(z.right))
+        y.h = 1 + max(self.getHeight(y.left),
+                      self.getHeight(y.right))
+
+        return y
+
+    def rRotate(self, z):
+        '''
+        right rotate unbalanced tree
+        :param z: Agent, root of current child which needs right rotation
+        :return: Agent, root of current child after rotation
+        '''
+        y = z.left
+        T3 = y.right
+
+        y.right = z
+        z.left = T3
+
+        z.h = 1 + max(self.getHeight(z.left),
+                      self.getHeight(z.right))
+        y.h = 1 + max(self.getHeight(y.left),
+                      self.getHeight(y.right))
+
+        return y
+
+    def getHeight(self, root):
+        '''
+        get the height of current agent node from bottom
+        :param root: Agent
+        :return: int, the height value
+        '''
+        if not root:
+            return 0
+
+        return root.h
+
+    def getBal(self, root):
+        '''
+        get the height difference of current node's left child and right child
+        :param root: Agent
+        :return: int, the height difference value
+        '''
+        if not root:
+            return 0
+
+        return self.getHeight(root.left) - self.getHeight(root.right)
+
+
+    def find_agent(self, ID):
+        '''
+        find the Agent node of a certain ID
+        :param ID: int
+        :return: Agent node
+        '''
+        temp = self.root
+        while temp.ID != ID:
+            if ID < temp.ID:
+                temp = temp.left
+            else:
+                temp = temp.right
+        return temp
+
+
+    # Question 1:
+    def print_serial(self,starting,ending):
+        '''
+        print a series of agent from 1 id to another id
+        :param starting: int, starting ID
+        :param ending: int, ending ID
+        '''
+        for ID in range(starting, ending+1):
+            print(self.find_agent(ID))
+
+    # Question 2:
+    def agent(self, ID):
+        '''
+        provide agent Profile
+        :param ID: int
+        '''
+        temp = self.find_agent(ID)
+        output = f'''{temp}\nupline {temp.upline.ID}\ndownline'''
+        for downline in temp.downline:
+            output += f'\n{downline:>13}'
+        print(output)
+
+    # Question 3:
+    def print_uplines(self,ID):
+        '''
+        trace the entire uplines of a certain agent
+        :param ID: int
+        '''
+        temp = self.find_agent(ID)
+        offset = 0
+        while temp.upline:
+            print("".ljust(offset, " "), f'{temp}')
+            offset += 4
+            temp = temp.upline
+
+    # Question 4:
+    def import_value_from_file(self,sales_file,month):
+        '''
+        import and calculate the sales and purchase data of Agent nodes from file
+        :param sales_file:  str, the directory of sales file
+        :param month: int, the month of sales file
+        '''
+        with open(sales_file, "r") as f:
+            sales_data = f.read().split("\n")
+            sales_data.remove("")
+
+        for line in sales_data:
+            ID = int(line.split(',')[0])
+            amount = int(line.split(',')[1])
+
+            temp = self.find_agent(ID)
+            temp.mthPurchase[month-1] += amount
+
+            temp = temp.upline
+            while temp:
+                temp.mthSales[month-1] += amount
+                temp = temp.upline
+
+    # Question 5:
+    def print_performance(self, ID):
+        '''
+        print out the performance of 1 agent
+        :param ID:int
+        '''
+        temp = self.find_agent(ID)
+        performance = f'{temp}'
+        performance += f"\n{'Month':15}"
+        for m in range(1, 13):
+            performance += f'{m:8}'
+        performance += f"\n{'Purchase':15}"
+        for purchase in temp.mthPurchase:
+            performance += f'{purchase:8}'
+        performance += f"\n{'Group Sales':15}"
+        for sales in temp.mthSales:
+            performance += f'{sales:8}'
+        print(performance)
+
+    # Question 6:
+    def list_upIndSales(self):
+        '''
+        list out the agents who have consecutive increase in the purchase for 4 months
+        :return: list, all Agent nodes that meet the condition
+        '''
+        list_upIndSales = []
+        temp = self.root
+        def inorder_traversal_upIndSales(temp, answer):
+            if temp is None:
+                return
+            inorder_traversal_upIndSales(temp.left, answer)
+            for m in range(1, 9):
+                if (all([temp.mthPurchase[i] < temp.mthPurchase[i + 1] for i in range(m - 1, m + 3)])):
+                    answer.append(temp)
+            inorder_traversal_upIndSales(temp.right, answer)
+        inorder_traversal_upIndSales(temp, list_upIndSales)
+        return list_upIndSales
+
+    # Question 7:
+    def list_upGrpSales(self):
+        '''
+        list out the agents who have consecutive increase in
+        the purchase + group sales for 4 months
+        :return: list,  all agent ID that meet the condition
+        '''
+        list_upGrpSales = []
+        temp = self.root
+        def inorder_traversal_upGrpSales(temp, answer):
+            if temp is None:
+                return
+            inorder_traversal_upGrpSales(temp.left, answer)
+            for m in range(1, 9):
+                combined_list = [temp.mthPurchase[i] + temp.mthSales[i] for i in range(12)]
+                if (all([combined_list[i] < combined_list[i + 1] for i in range(m - 1, m + 3)])):
+                    answer.append(temp.ID)
+            inorder_traversal_upGrpSales(temp.right, answer)
+        inorder_traversal_upGrpSales(temp, list_upGrpSales)
+        return list_upGrpSales
+
+    # Question 8:
+    def tree_performance_mth(self, ID, month):
+        '''
+        create a 3 generation of performance tracing to ensure
+        the computations of group sales are correct
+        :param ID: int
+        :param month: int
+        '''
+        def performance(ID, offset=0):
+            temp = self.find_agent(ID)
+            if offset!=21:
+                print("".ljust(offset, " "), f'{temp}{temp.mthPurchase[month-1]:9}{temp.mthSales[month-1]:9}')
+                offset+=7
+                for IDs in temp.downline:
+                    performance(int(IDs), offset)
+        performance(ID)
+
+
+if __name__=='__main__':
+    menu()
+    
+
