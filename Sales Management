@@ -1,18 +1,13 @@
-'''
-AN6007 Advanced Programming - Group Submission
-Group 7
-Members: XiaoYi, HaoYue, Peiyu, Daniel, YangHang
-'''
 import os
 
 def menu():
     agentpath = input("Please provide path of Agentlist.txt on local drive ")
     if agentpath == '':
-        agentpath = r"C:\Users\danlo\OneDrive - Nanyang Technological University\NTU MSBA\AN6007 - Advanced Programming\Group 1\Group Submission\AgentList.txt"
+        agentpath = r"./AgentList.txt"
     a=AgentList(agentpath)
     salespath = input("Please provide path of Salesdata folder on local drive ")
     if salespath == '':
-        salespath = r"C:\Users\danlo\OneDrive - Nanyang Technological University\NTU MSBA\AN6007 - Advanced Programming\Group 1\Group Submission\Salesdata"
+        salespath = r"./Salesdata"
     saleslist = os.listdir(salespath)
     for file in saleslist:
         if file.endswith('.txt'):
