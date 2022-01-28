@@ -1,64 +1,3 @@
-import os
-
-def menu():
-    agentpath = input("Please provide path of Agentlist.txt on local drive ")
-    if agentpath == '':
-        agentpath = r"./AgentList.txt"
-    a=AgentList(agentpath)
-    salespath = input("Please provide path of Salesdata folder on local drive ")
-    if salespath == '':
-        salespath = r"./Salesdata"
-    saleslist = os.listdir(salespath)
-    for file in saleslist:
-        if file.endswith('.txt'):
-            month = int(file[11:13])
-            a.import_value_from_file(salespath + "\\" + file, month)    
-    while True:
-        option = input("""
-Main Menu
-    1) Print series of agents
-    2) Print agent profile
-    3) Print entire upline
-    4) Print performance of specific agent
-    5) Print all agents who have consecutive increase in the purchase for 4 months
-    6) Print all agents who have consecutive increase in the purchase + group sales for 4 months
-    7) Print 3 generation of performance tracing
-    Q) Quit
-Please select which function you would like to perfom? """).strip().upper()
-        if option == '1':
-            start = input("Please input starting agent ").strip()
-            end = input("Please input ending agent ").strip()
-            a.print_serial(int(start), int(end)) # 10015,10027
-        elif option =='2':
-            profile = input("Please input agent you wish to query profile of ").strip()
-            a.agent(int(profile)) #10012
-        elif option =='3':
-            uplines = input("Please input agent you wish to query upline of ").strip()
-            a.print_uplines(int(uplines)) #14987
-        elif option =='4':
-            performance = input("Please input agent you wish to query performance of ").strip()
-            a.print_performance(int(performance)) #37609
-        elif option =='5':
-            print("4 mths up individual sales")
-            for each in a.list_upIndSales():
-                print(each)
-                print(each.mthPurchase)
-        elif option =='6':
-            print("4 mths up group sales")
-            for each in a.list_upGrpSales():
-                print("*", end="")
-                a.print_performance(each)
-            print()
-        elif option =='7':
-            tperf = input("Please input agent you wish to query 3 generation tracking performance of ").strip()
-            tmth = input("Please input month you wish to query 3 generation tracking performance of ").strip()
-            a.tree_performance_mth(int(tperf),int(tmth)) #10786, 1
-        elif option =='Q':
-            print('Thank you, Good bye!')
-            break
-        else:
-            print("This is not a valid option")
-
 class Agent:
     def __init__(self,ID):
         '''
@@ -351,6 +290,66 @@ class AgentList:
                 for IDs in temp.downline:
                     performance(int(IDs), offset)
         performance(ID)
+import os
+
+def menu():
+    agentpath = input("Please provide path of Agentlist.txt on local drive ")
+    if agentpath == '':
+        agentpath = r"./AgentList.txt"
+    a=AgentList(agentpath)
+    salespath = input("Please provide path of Salesdata folder on local drive ")
+    if salespath == '':
+        salespath = r"./Salesdata"
+    saleslist = os.listdir(salespath)
+    for file in saleslist:
+        if file.endswith('.txt'):
+            month = int(file[11:13])
+            a.import_value_from_file(salespath + "\\" + file, month)    
+    while True:
+        option = input("""
+Main Menu
+    1) Print series of agents
+    2) Print agent profile
+    3) Print entire upline
+    4) Print performance of specific agent
+    5) Print all agents who have consecutive increase in the purchase for 4 months
+    6) Print all agents who have consecutive increase in the purchase + group sales for 4 months
+    7) Print 3 generation of performance tracing
+    Q) Quit
+Please select which function you would like to perfom? """).strip().upper()
+        if option == '1':
+            start = input("Please input starting agent ").strip()
+            end = input("Please input ending agent ").strip()
+            a.print_serial(int(start), int(end)) # 10015,10027
+        elif option =='2':
+            profile = input("Please input agent you wish to query profile of ").strip()
+            a.agent(int(profile)) #10012
+        elif option =='3':
+            uplines = input("Please input agent you wish to query upline of ").strip()
+            a.print_uplines(int(uplines)) #14987
+        elif option =='4':
+            performance = input("Please input agent you wish to query performance of ").strip()
+            a.print_performance(int(performance)) #37609
+        elif option =='5':
+            print("4 mths up individual sales")
+            for each in a.list_upIndSales():
+                print(each)
+                print(each.mthPurchase)
+        elif option =='6':
+            print("4 mths up group sales")
+            for each in a.list_upGrpSales():
+                print("*", end="")
+                a.print_performance(each)
+            print()
+        elif option =='7':
+            tperf = input("Please input agent you wish to query 3 generation tracking performance of ").strip()
+            tmth = input("Please input month you wish to query 3 generation tracking performance of ").strip()
+            a.tree_performance_mth(int(tperf),int(tmth)) #10786, 1
+        elif option =='Q':
+            print('Thank you, Good bye!')
+            break
+        else:
+            print("This is not a valid option")
 
 
 if __name__=='__main__':
